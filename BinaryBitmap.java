@@ -44,6 +44,11 @@ public class BinaryBitmap {
 	private int[] bitmap;
 	private int BITS_PER_INT = 32;
 	private int BITS_PER_BUCKET = 2;
+	private int int_index, bit_index;
+	private int start, end;
+	private int startMask, endMask;
+	private int startValue, endValue;
+	
 	
 	
 	/**
@@ -79,6 +84,24 @@ public class BinaryBitmap {
 		return position % BITS_PER_INT;
 	}
 	
+	public void computeBitmapData(int position){
+		int_index = getIntIndex(position);
+		bit_index = getBitIndex(position);
+		
+		start = (BITS_PER_INT-1) - bit_index;
+		if(bit_index == 0){
+			startMask = -1;
+		}else{
+			startMask = (1 << (start+1)) - 1;
+		}
+		
+		end = start - (BITS_PER_BUCKET-1);
+		endMask = (1 << end) - 1;
+		
+		startValue = bitmap[int_index] & startMask;
+		endValue = bitmap[int_index] & endMask;
+	}
+	
 	/**
 	 * Get bit value. 
 	 * Position is between [0, capacity-1].
@@ -86,22 +109,7 @@ public class BinaryBitmap {
 	 * @return
 	 */
 	public int getBitValue(int position){
-		int int_index = getIntIndex(position);
-		int bit_index = getBitIndex(position);
-		
-		int start = (BITS_PER_INT-1) - bit_index;
-		int startMask;
-		if(bit_index == 0){
-			startMask = -1;
-		}else{
-			startMask = (1 << (start+1)) - 1;
-		}
-		
-		int end = start - (BITS_PER_BUCKET-1);
-		int endMask = (1 << end) - 1;
-		
-		int startValue = bitmap[int_index] & startMask;
-		int endValue = bitmap[int_index] & endMask;
+		computeBitmapData(position);
 		
 		int result = (startValue - endValue) >> end;
 		return result;
@@ -116,28 +124,10 @@ public class BinaryBitmap {
 		if(getBitValue(position) == (1 << BITS_PER_BUCKET) - 1){
 			return (1 << BITS_PER_BUCKET) - 1;
 		}
-		
-		int int_index = getIntIndex(position);
-		int bit_index = getBitIndex(position);
-		
-		int start = (BITS_PER_INT-1) - bit_index;
-		int startMask;
-		if(bit_index == 0){
-			startMask = -1;
-		}else{
-			startMask = (1 << (start+1)) - 1;
-		}
-		
-		int end = start - (BITS_PER_BUCKET-1);
-		int endMask = (1 << end) - 1;
-		
-		int startValue = bitmap[int_index] & startMask;
-		int endValue = bitmap[int_index] & endMask;
-		
+
+		//since computeBitmapData(position) has been computed in getBitValue(position), so, we can use these data directly.
 		bitmap[int_index] = (((startValue - endValue) >> end) + 1) << end + endValue;
-		
-		return getBitValue(position);
-		
+		return getBitValue(position);		
 	}
 	
 	/**
@@ -150,29 +140,11 @@ public class BinaryBitmap {
 			return 0;
 		}
 		
-		int int_index = getIntIndex(position);
-		int bit_index = getBitIndex(position);
-		
-		int start = (BITS_PER_INT-1) - bit_index;
-		int startMask;
-		if(bit_index == 0){
-			startMask = -1;
-		}else{
-			startMask = (1 << (start+1)) - 1;
-		}
-		
-		int end = start - (BITS_PER_BUCKET-1);
-		int endMask = (1 << end) - 1;
-		
-		int startValue = bitmap[int_index] & startMask;
-		int endValue = bitmap[int_index] & endMask;
-		
 		bitmap[int_index] = (((startValue - endValue) >> end) - 1) << end + endValue;
-		
-		return getBitValue(position);
-		
+		return getBitValue(position);		
 	}
 	
 
 
 }
+
